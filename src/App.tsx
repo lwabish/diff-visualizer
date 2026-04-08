@@ -1,19 +1,38 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { InputPanel } from './components/InputPanel';
 import { DiffTable } from './components/DiffTable';
 import { SummaryBar } from './components/SummaryBar';
 import { parseArgs } from './lib/parser';
 import { computeDiff, summarize } from './lib/diff';
+import type { DiffStatus } from './types';
 
 export default function App() {
   const [rawA, setRawA] = useState('');
   const [rawB, setRawB] = useState('');
+  const [hiddenFilters, setHiddenFilters] = useState<Set<DiffStatus>>(new Set());
 
   const parsedA = useMemo(() => parseArgs(rawA), [rawA]);
   const parsedB = useMemo(() => parseArgs(rawB), [rawB]);
 
   const diffRows = useMemo(() => computeDiff(parsedA, parsedB), [parsedA, parsedB]);
   const summary = useMemo(() => summarize(diffRows), [diffRows]);
+
+  const filteredRows = useMemo(
+    () => (hiddenFilters.size === 0 ? diffRows : diffRows.filter(r => !hiddenFilters.has(r.status))),
+    [diffRows, hiddenFilters],
+  );
+
+  const handleToggleFilter = useCallback((status: DiffStatus) => {
+    setHiddenFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  }, []);
 
   const hasDiff = parsedA.length > 0 || parsedB.length > 0;
 
@@ -58,9 +77,14 @@ export default function App() {
               <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
                 Normalized Diff
               </h2>
-              <SummaryBar summary={summary} total={diffRows.length} />
+              <SummaryBar
+                summary={summary}
+                total={diffRows.length}
+                activeFilters={hiddenFilters}
+                onToggleFilter={handleToggleFilter}
+              />
             </div>
-            <DiffTable rows={diffRows} />
+            <DiffTable rows={filteredRows} />
           </section>
         )}
 
