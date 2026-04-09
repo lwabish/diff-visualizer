@@ -9,7 +9,7 @@ import type { DiffStatus } from './types';
 export default function App() {
   const [rawA, setRawA] = useState('');
   const [rawB, setRawB] = useState('');
-  const [hiddenFilters, setHiddenFilters] = useState<Set<DiffStatus>>(new Set());
+  const [hiddenFilters, setHiddenFilters] = useState<Set<DiffStatus>>(new Set<DiffStatus>(['same']));
 
   const parsedA = useMemo(() => parseArgs(rawA), [rawA]);
   const parsedB = useMemo(() => parseArgs(rawB), [rawB]);
