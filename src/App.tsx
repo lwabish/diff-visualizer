@@ -9,6 +9,8 @@ import type { DiffStatus } from './types';
 export default function App() {
   const [rawA, setRawA] = useState('');
   const [rawB, setRawB] = useState('');
+  const [nameA, setNameA] = useState('');
+  const [nameB, setNameB] = useState('');
   const [hiddenFilters, setHiddenFilters] = useState<Set<DiffStatus>>(new Set<DiffStatus>(['same']));
 
   const parsedA = useMemo(() => parseArgs(rawA), [rawA]);
@@ -51,6 +53,8 @@ export default function App() {
         <section className="flex flex-col md:flex-row gap-4">
           <InputPanel
             label="A"
+            name={nameA}
+            onNameChange={setNameA}
             value={rawA}
             onChange={setRawA}
             parsed={parsedA}
@@ -63,6 +67,8 @@ export default function App() {
           </div>
           <InputPanel
             label="B"
+            name={nameB}
+            onNameChange={setNameB}
             value={rawB}
             onChange={setRawB}
             parsed={parsedB}
@@ -84,7 +90,7 @@ export default function App() {
                 onToggleFilter={handleToggleFilter}
               />
             </div>
-            <DiffTable rows={filteredRows} />
+            <DiffTable rows={filteredRows} nameA={nameA} nameB={nameB} />
           </section>
         )}
 

@@ -3,9 +3,11 @@ import { DiffRow } from './DiffRow';
 
 interface Props {
   rows: DiffRowType[];
+  nameA: string;
+  nameB: string;
 }
 
-export function DiffTable({ rows }: Props) {
+export function DiffTable({ rows, nameA, nameB }: Props) {
   if (rows.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-gray-600 text-sm">
@@ -21,10 +23,10 @@ export function DiffTable({ rows }: Props) {
           <tr className="bg-gray-800 text-gray-400 text-xs uppercase tracking-wider">
             <th className="py-2 px-3 font-medium w-64">Key</th>
             <th className="py-2 px-3 font-medium">
-              <span className="text-red-400">A</span> Value
+              <span className="text-red-400">A</span>{nameA ? ` · ${nameA}` : ''} Value
             </th>
             <th className="py-2 px-3 font-medium">
-              <span className="text-green-400">B</span> Value
+              <span className="text-green-400">B</span>{nameB ? ` · ${nameB}` : ''} Value
             </th>
           </tr>
         </thead>
