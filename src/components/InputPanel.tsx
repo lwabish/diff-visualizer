@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { formatArgs } from '../lib/parser';
-import type { ParsedArg } from '../types';
+import type { ParsedArg, InputFormat } from '../types';
 
 interface Props {
   label: string;
@@ -9,10 +9,16 @@ interface Props {
   value: string;
   onChange: (v: string) => void;
   parsed: ParsedArg[];
+  format: InputFormat;
   colorClass: string; // border/accent color
 }
 
-export function InputPanel({ label, name, onNameChange, value, onChange, parsed, colorClass }: Props) {
+const PLACEHOLDERS: Record<InputFormat, (label: string) => string> = {
+  cli: (label) => `Paste ${label} CLI args here...\ne.g.  --model /path/to/model --tp 4 --port 30000`,
+  yaml: (label) => `Paste ${label} YAML here...\ne.g.\nmodel:\n  path: /path/to/model\ntp: 4\nport: 30000`,
+};
+
+export function InputPanel({ label, name, onNameChange, value, onChange, parsed, format, colorClass }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleCopyNormalized = () => {
@@ -34,6 +40,11 @@ export function InputPanel({ label, name, onNameChange, value, onChange, parsed,
           />
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
+          {value.trim() && (
+            <span className="px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 font-mono uppercase tracking-wide">
+              {format}
+            </span>
+          )}
           <span>{parsed.length} args</span>
           <button
             onClick={handleCopyNormalized}
@@ -48,7 +59,7 @@ export function InputPanel({ label, name, onNameChange, value, onChange, parsed,
         ref={textareaRef}
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder={`Paste ${label} args here...\ne.g.  --model /path/to/model --tp 4 --port 30000`}
+        placeholder={PLACEHOLDERS[format](label)}
         className="w-full h-48 resize-y rounded-lg border border-gray-600 bg-gray-800 text-gray-100 text-sm font-mono p-3 focus:outline-none focus:border-gray-400 placeholder-gray-600"
         spellCheck={false}
       />

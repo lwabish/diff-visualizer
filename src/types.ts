@@ -1,3 +1,5 @@
+export type InputFormat = 'cli' | 'yaml';
+
 export interface ParsedArg {
   key: string;
   value: string | null; // null = boolean flag

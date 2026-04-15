@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { InputPanel } from './components/InputPanel';
 import { DiffTable } from './components/DiffTable';
 import { SummaryBar } from './components/SummaryBar';
-import { parseArgs } from './lib/parser';
+import { parseInput, detectFormat } from './lib/parser';
 import { computeDiff, summarize } from './lib/diff';
 import type { DiffStatus } from './types';
 
@@ -13,8 +13,11 @@ export default function App() {
   const [nameB, setNameB] = useState('');
   const [hiddenFilters, setHiddenFilters] = useState<Set<DiffStatus>>(new Set<DiffStatus>(['same']));
 
-  const parsedA = useMemo(() => parseArgs(rawA), [rawA]);
-  const parsedB = useMemo(() => parseArgs(rawB), [rawB]);
+  const formatA = useMemo(() => detectFormat(rawA), [rawA]);
+  const formatB = useMemo(() => detectFormat(rawB), [rawB]);
+
+  const parsedA = useMemo(() => parseInput(rawA, formatA), [rawA, formatA]);
+  const parsedB = useMemo(() => parseInput(rawB, formatB), [rawB, formatB]);
 
   const diffRows = useMemo(() => computeDiff(parsedA, parsedB), [parsedA, parsedB]);
   const summary = useMemo(() => summarize(diffRows), [diffRows]);
@@ -45,7 +48,7 @@ export default function App() {
         <header>
           <h1 className="text-2xl font-bold text-white">Arg Visualizer</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Paste two sets of Python-style CLI arguments — differences are highlighted after normalization.
+            Paste two sets of arguments — differences are highlighted after normalization.
           </p>
         </header>
 
@@ -58,6 +61,7 @@ export default function App() {
             value={rawA}
             onChange={setRawA}
             parsed={parsedA}
+            format={formatA}
             colorClass="text-red-400"
           />
           <div className="hidden md:flex items-center justify-center text-gray-600 px-2">
@@ -72,6 +76,7 @@ export default function App() {
             value={rawB}
             onChange={setRawB}
             parsed={parsedB}
+            format={formatB}
             colorClass="text-green-400"
           />
         </section>

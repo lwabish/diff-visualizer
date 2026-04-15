@@ -1,4 +1,20 @@
+import { load as yamlLoad } from 'js-yaml';
 import type { ParsedArg } from '../types';
+import type { InputFormat } from '../types';
+
+/** Detect input format heuristically */
+export function detectFormat(raw: string): InputFormat {
+  if (!raw.trim()) return 'cli';
+  // YAML: has at least one line with "word: " or "word:\n" (not starting with --)
+  if (/^\s*(?!--)\w[\w.-]*\s*:/m.test(raw)) return 'yaml';
+  return 'cli';
+}
+
+/** Parse input according to the selected format */
+export function parseInput(raw: string, format: InputFormat): ParsedArg[] {
+  if (format === 'yaml') return parseYaml(raw);
+  return parseArgs(raw);
+}
 
 /**
  * Parse a raw argument string (single-line, multi-line, or backslash-continued)
@@ -116,4 +132,64 @@ function stripQuotes(s: string): string {
     return s.slice(1, -1);
   }
   return s;
+}
+
+// ── YAML parser ────────────────────────────────────────────────────────────
+
+/**
+ * Parse a YAML string into a sorted list of ParsedArg entries.
+ * Nested objects are recursively flattened with dot-notation keys.
+ * Array elements are indexed (e.g. servers.0, servers.1).
+ */
+export function parseYaml(raw: string): ParsedArg[] {
+  if (!raw.trim()) return [];
+
+  let parsed: unknown;
+  try {
+    parsed = yamlLoad(raw);
+  } catch {
+    return [];
+  }
+
+  if (parsed === null || parsed === undefined) return [];
+  if (typeof parsed !== 'object') return [];
+
+  const entries: ParsedArg[] = [];
+  flattenObject(parsed as Record<string, unknown>, '', entries);
+
+  const map = new Map<string, string | null>();
+  for (const arg of entries) {
+    map.set(arg.key, arg.value);
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => ({ key, value }));
+}
+
+function flattenObject(
+  obj: Record<string, unknown>,
+  prefix: string,
+  result: ParsedArg[],
+): void {
+  for (const [k, v] of Object.entries(obj)) {
+    const key = prefix ? `${prefix}.${k}` : k;
+
+    if (v === null || v === undefined) {
+      result.push({ key, value: null });
+    } else if (Array.isArray(v)) {
+      v.forEach((item, idx) => {
+        const idxKey = `${key}.${idx}`;
+        if (item !== null && item !== undefined && typeof item === 'object') {
+          flattenObject(item as Record<string, unknown>, idxKey, result);
+        } else {
+          result.push({ key: idxKey, value: item === null || item === undefined ? null : String(item) });
+        }
+      });
+    } else if (typeof v === 'object') {
+      flattenObject(v as Record<string, unknown>, key, result);
+    } else {
+      result.push({ key, value: String(v) });
+    }
+  }
 }
